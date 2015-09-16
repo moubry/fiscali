@@ -7,16 +7,22 @@ module RisingSun
     FISCAL_ZONE = {:india => 4, :uk => 4, :us => 10, :pakistan => 7,
                    :australia => 7, :ireland => 1, :nz => 7, :japan => 4}
     FY_START_MONTH = 1
+    FY_START_WEEK = 1
 
     module ClassMethods
 
       def fiscal_zone=(zone)
         @fiscali_start_month = FISCAL_ZONE[zone] || FY_START_MONTH
+        @fiscali_start_week = FY_START_WEEK
         @fiscali_zone = zone
       end
 
       def fy_start_month
         @fiscali_start_month || FY_START_MONTH
+      end
+
+      def fy_start_week
+        @fiscali_start_week || FY_START_WEEK
       end
 
       def fiscal_zone
@@ -26,6 +32,10 @@ module RisingSun
       def fy_start_month=(month)
         @fiscali_zone = nil
         @fiscali_start_month = month
+      end
+
+      def fy_start_week=(week)
+        @fiscali_start_week = week
       end
 
       def financial_year_start(year=Date.today.year)
@@ -47,14 +57,13 @@ module RisingSun
       def uses_forward_year?
         @fy_forward || false
       end
-
     end
 
     def financial_year
       if self.class.uses_forward_year?
-        self.month < start_month ? self.year : self.year + 1
+        in_current_financial_year? ? year : year + 1
       else
-        self.month < start_month ? self.year - 1 : self.year
+        in_current_financial_year? ? year - 1 : year
       end
     end
 
@@ -124,7 +133,23 @@ module RisingSun
       end
     end
 
+    # http://stackoverflow.com/questions/12428638/how-do-you-find-what-week-in-a-month-a-day-is-on
+    def week_of_year(mondays = false)
+      # Use %U for weeks starting on Sunday
+      # Use %W for weeks starting on Monday
+      strftime(mondays ? "%W" : "%U").to_i + 1
+    end
+
+    def week_of_month(mondays = false)
+      week_of_year(mondays) - beginning_of_month.week_of_year(mondays) + 1
+    end
+
     private
+
+    def in_current_financial_year?
+      return self.week_of_month < start_week if self.month == start_month
+      self.month < start_month
+    end
 
     def months_between
       soy = self.beginning_of_financial_year
@@ -133,6 +158,10 @@ module RisingSun
 
     def start_month
       self.class.fy_start_month || FY_START_MONTH
+    end
+
+    def start_week
+      self.class.fy_start_week || FY_START_WEEK
     end
   end
 end
