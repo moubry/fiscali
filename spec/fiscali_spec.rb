@@ -23,7 +23,38 @@ describe "fiscali" do
     expect(Date.financial_year_start(2009)).to eql(Date.new(2009,4,1))
   end
 
+  context 'mid-month fiscal year starts' do
+    before :each do
+      Date.reset_forward_year!
+      Date.fy_start_month = 9
+      Date.fy_start_week = 5
+      Date.use_forward_year!
+    end
+
+    after :each do
+      Date.fy_start_month = 1
+      Date.fiscal_zone = :india
+      Date.reset_forward_year!
+    end
+
+    it 'reports day before as calendar year' do
+      expect(Date.parse('2015-09-26').financial_year).to eql(2015)
+    end
+
+    it 'reports first day of fiscal year as next calendar year' do
+      expect(Date.parse('2015-09-27').financial_year).to eql(2016)
+    end
+
+    it 'reports day after fiscal year start as next calendar year' do
+      expect(Date.parse('2015-09-28').financial_year).to eql(2016)
+    end
+  end
+
   context "Forward Year settings" do
+    before :each do
+      Date.reset_forward_year!
+    end
+
     after :each do
       Date.reset_forward_year!
     end
